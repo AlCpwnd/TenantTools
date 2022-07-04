@@ -11,3 +11,9 @@ Will return an array containing the current Teams and private channels the user 
 
 ### Teams_AccessCopy.ps1
 Will copy an existing user's access onto another existing user.
+
+#### Parameters
+- Template : Can accept a user UPN or the path towards a report generated with **Teams_AccessReport.ps1**.
+- Identity : UPN of the user on which you want to apply the copied rights.
+- IncludeRights : If enabled, the script will replicate the ownership of channels and Teams where applicable.
+- Select : If enabled, you will be presented with a list of the template user's access prior to application. You can then select which access you want to replicate.

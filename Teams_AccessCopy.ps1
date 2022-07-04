@@ -2,7 +2,7 @@
 
 param(
     [Parameter(Mandatory = $true)]
-    [String]$TemplateUser,
+    [String]$Template,
     [Parameter(Mandatory = $true)]
     [string]$Identity,
     [Switch]$IncludeRights,
@@ -78,6 +78,10 @@ function Get-TeamsChannelAccess {
     #>
 }
 
+function Write-Info{Param([Parameter(Mandatory,Position=0)][string]$Message)Write-Host "`t(i):$Message" -ForegroundColor Cyan}
+
+function Write-Warning{Param([Parameter(Mandatory,Position=0)][string]$Message)Write-Host "`t[!]:$Message" -ForegroundColor Red}
+
 ###########################################################
 
 
@@ -85,22 +89,28 @@ function Get-TeamsChannelAccess {
 
 # Lists the $Identity user's existing Teams access.
 try{
-    Write-Host "`n`t(i):Verifying [$Identity] current access." -ForegroundColor Cyan
+    Write-Info "Verifying [$Identity] current access."
     Get-Team -User $Identity -ErrorAction Stop
 }
 catch{
-    Write-Host "`t[x]:$Identity couldn't be found." -ForegroundColor Red
+    Write-Warning "$Identity couldn't be found."
     return
 }
 
-# Lists the $TemplateUser user's existing Teams access.
-try{
-    Write-Host "`n`t(i):Recovering [$TemplateUser] current access." -ForegroundColor Cyan
-    $TemplateTeams = Get-TeamsChannelAccess -User $TemplateUser -ErrorAction Stop
-}
-catch{
-    Write-Host "`t[x]:$TemplateUser couldn't be found." -ForegroundColor Red
-    return
+# Lists the $Template user's existing Teams access.
+if($Template -like "*@*.*"){
+    try{
+        Write-Info "Recovering [$Template] current access."
+        $TemplateTeams = Get-TeamsChannelAccess -User $Template -ErrorAction Stop
+    }
+    catch{
+        Write-Warning "$Template couldn't be found."
+        return
+    }
+}elseif (Test-Path -Path $Template -PathType Leaf) {
+    $TemplateTeams = Import-Csv -Path $Template -Encoding UTF8
+}else{
+
 }
 
 ###########################################################
@@ -114,7 +124,7 @@ if($Select){
     $FinalTemplate = $TemplateTeams
 }
 
-Write-Host "`n`t(i):Attempting to copy rights." -ForegroundColor Cyan
+Write-Info "Attempting to copy rights."
 
 # Adding user to the various Teams
 $Teams = $FinalTemplate.GroupId | Select-Object -Unique
@@ -136,11 +146,11 @@ foreach($Team in $Teams){
     }
     catch{
         $TeamDisplayName = ($FinalTemplate | Where-Object{$_.GroupId -eq $Team})[0].Teams
-        Write-Host "`t[x]:Failed to add user to Teams : $TeamDisplayName" -ForegroundColor Red
+        Write-Error "Failed to add user to Teams : $TeamDisplayName"
     }
 }
 
-Write-Host "`n`t(i):Adding private channel access." -ForegroundColor Cyan
+Write-Info "Adding private channel access."
 
 # Adding user to the various channels
 $Channels = $FinalTemplate | Where-Object{$_.Type -eq "Private"}
@@ -162,6 +172,6 @@ foreach($Channel in $Channels){
         Add-TeamChannelUser @param
     }
     catch{
-        Write-Host "`t[x]:Failed to add user to channel : $($Channel.Channel)" -ForegroundColor Red
+        Write-Error "Failed to add user to channel : $($Channel.Channel)"
     }
 }
