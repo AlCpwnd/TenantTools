@@ -8,7 +8,10 @@ param(
 function Show-Info {param ([Parameter(Mandatory,Position=0)][String]$Message)Write-Host "`t(i)$Message" -ForegroundColor Gray}
 function Show-Error {param ([Parameter(Mandatory,Position=0)][String]$Message)Write-Host "`t[x]$Message" -ForegroundColor Red}
 
+try{Get-CsTenant|Out-Null}catch{"";Show-Error "Please connect the Microsoft Teams Services";"";return}
+
 try{
+    Show-Info "Verifying user"
     $Teams = Get-Team -User $User -ErrorAction Stop
 }catch{
     Show-Error "`'$User`' not found"
@@ -30,21 +33,25 @@ $Report = foreach($Team in $Teams){
         $ChannelUsers = Get-TeamChannelUser -GroupId $Team.GroupId -DisplayName $Channel.DisplayName
         if($ChannelUsers.user -contains $User){
             [PSCustomObject]@{
+                GroupId = $Team.GroupId
                 Teams = $Team.DisplayName
                 Channel = $Channel.DisplayName
                 Access = $ChannelUsers.Role[$ChannelUsers.User.IndexOf($User)]
             }
         }
+        $j++
     }
     Write-Progress -Activity "Documenting Channels" -Id 1 -ParentId 0 -Completed
+    $i++
 }
 Write-Progress -Activity "Documenting Teams" -Completed -Id 0
 
-if($Path){
-    $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
-    Show-Info "File saved under: $Path"
+if(Test-Path -Path $Path -PathType Container){
+    $Path += "\$(Get-Date -Format yyyyMMdd)_$($User.Replace("@","_").Replace(".","_")).csv"
+    $Path = $Path.Replace("\\","\")
 }else{
-    $Path = "$PSSriptRoot\$(Get-Date -Format yyyyMMdd)_$($User.Replace("@","_").Replace(".","_")).csv"
-    $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
-    Show-Info "File saved under: $Path"
+    $Path = "$PSSriptRoot\$(Get-Date -Format yyyyMMdd)_$($User.Replace("@","_").Replace(".","_")).csv" 
 }
+
+$Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
+Show-Info "File saved under: $Path"
