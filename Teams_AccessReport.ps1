@@ -45,13 +45,11 @@ $Report = foreach($Team in $Teams){
     $i++
 }
 Write-Progress -Activity "Documenting Teams" -Completed -Id 0
-
-if(Test-Path -Path $Path -PathType Container){
+if(!$Path){
+    $Path = "$PSScriptRoot\$(Get-Date -Format yyyyMMdd)_$($User.Replace("@","_").Replace(".","_")).csv" 
+}elseif(Test-Path -Path $Path -PathType Container){
     $Path += "\$(Get-Date -Format yyyyMMdd)_$($User.Replace("@","_").Replace(".","_")).csv"
     $Path = $Path.Replace("\\","\")
-}else{
-    $Path = "$PSSriptRoot\$(Get-Date -Format yyyyMMdd)_$($User.Replace("@","_").Replace(".","_")).csv" 
 }
-
 $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
 Show-Info "File saved under: $Path"
