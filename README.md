@@ -27,3 +27,13 @@ Csv headers:
 - DisplayName: Strictly meant to for display purposes. This will be solely used in the `Write-Progress` part of the script.
 - UserPrincipalName: UPN of the mailbox from which you want to forward the mails.
 - Mail: Email address to which the mails will be forwarded.
+
+## MSOL Scripts
+
+### MSOL_ServiceCheck.ps1
+Will go over all licensed users within the tenant and return any user that had services/features disabled from its assigned license.
+
+#### Parameters
+- Type: Will only accept the following 2 options
+    - Standard: Will return a simple array of the users having the issue
+    - Detailed: Will return a array containing the user, the affected license and the affected service(s) within said license
