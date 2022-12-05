@@ -37,3 +37,14 @@ Will go over all licensed users within the tenant and return any user that had s
 - Type: Will only accept the following 2 options
     - Standard: Will return a simple array of the users having the issue
     - Detailed: Will return a array containing the user, the affected license and the affected service(s) within said license
+
+### UserReport.ps1
+CSV report containing all members of your tenant and the following information:
+- DisplayName : Accout displayname
+- UserprincipalName : Account associated username
+- MailboxType : Type of mailbox the user is using (if any)
+- Licenses : List of licenses associate with the account
+> By default the report will be outputted to the host, use the `Export` switch to export it to a file. (See Parameters)
+#### Parameters
+- Export : Switch enabling the export of the report
+- Path : Exact file you want to export the result to
