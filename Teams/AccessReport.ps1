@@ -1,24 +1,39 @@
-#Requires -Modules MicrosoftTeams
-
 param(
     [Parameter(Mandatory)]
     [String]$User,
     [String]$Path
 )
+#Requires -Modules MicrosoftTeams
 function Show-Info {param ([Parameter(Mandatory,Position=0)][String]$Message)Write-Host "`t(i)$Message" -ForegroundColor Gray}
-function Show-Error {param ([Parameter(Mandatory,Position=0)][String]$Message)Write-Host "`t[x]$Message" -ForegroundColor Red}
 
-try{Get-CsTenant|Out-Null}catch{"";Show-Error "Please connect the Microsoft Teams Services";"";return}
+try{Get-CsTenant|Out-Null}catch{throw "Please connect the Microsoft Teams Services"}
 
 try{
     Show-Info "Verifying user"
     $Teams = Get-Team -User $User -ErrorAction Stop
 }catch{
-    Show-Error "`'$User`' not found"
-    return
+    throw "`'$User`' not found"
 }
 
 Show-Info "Generating report"
+
+class TeamsPermission{
+    [String]$GroupId
+    [String]$Teams
+    [String]$Channel
+    [String]$Access
+    TeamsPermission(
+        [String]$g,
+        [String]$t,
+        [String]$c,
+        [String]$a
+    ){
+        $this.GroupId = $g
+        $this.Teams = $t
+        $this.Channel = $c
+        $this.Access = $a
+    }
+}
 
 $i = 0
 $iMax = $Teams.Count
@@ -32,12 +47,7 @@ $Report = foreach($Team in $Teams){
         Write-Progress -Activity "Documenting Channels" -Status $Channel.DisplayName -PercentComplete ($j/$jMax*100) -Id 1 -ParentId 0
         $ChannelUsers = Get-TeamChannelUser -GroupId $Team.GroupId -DisplayName $Channel.DisplayName
         if($ChannelUsers.user -contains $User){
-            [PSCustomObject]@{
-                GroupId = $Team.GroupId
-                Teams = $Team.DisplayName
-                Channel = $Channel.DisplayName
-                Access = $ChannelUsers.Role[$ChannelUsers.User.IndexOf($User)]
-            }
+            [TeamsPermission]::new($Team.GroupId,$Team.DisplayName,$Channel.DisplayName,$ChannelUsers.Role[$ChannelUsers.User.IndexOf($User)])
         }
         $j++
     }
@@ -53,3 +63,47 @@ if(!$Path){
 }
 $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
 Show-Info "File saved under: $Path"
+
+<#
+    .SYNOPSIS
+
+    Documents permissions of a user.
+
+    .DESCRIPTION
+
+    Returns a CSV containing the Teams, Channels and the accesslevel the user has on those.
+
+    .PARAMETER User
+    UserPrincipalName of the user you want to know the permissions of.
+
+    .PARAMETER Path
+    Filepath for the report.
+
+    .INPUTS
+
+    None. You cannot pipe objects into AccessReports.ps1 .
+
+    .OUTPUTS
+
+    None.
+
+    .EXAMPLE
+
+    PS> AccessReport.ps1 -User 'john.doe@contosco.com'
+
+    .EXAMPLE
+
+    PS> AccessReport.ps1 -User 'john.doe@contosco.com' -Path '.\Report.csv'
+    
+    .LINK
+
+    Get-Team
+
+    .LINK
+
+    Get-TeamChannelUser
+
+    .LINK
+
+    Get-TeamChannel
+#>

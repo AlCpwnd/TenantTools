@@ -22,6 +22,24 @@ function Get-TeamsChannelAccess {
     $i = 0
     $iMax = $Teams.count
 
+    class TeamsPermission{
+        [String]$GroupId
+        [String]$Teams
+        [String]$Channel
+        [String]$Access
+        TeamsPermission(
+            [String]$g,
+            [String]$t,
+            [String]$c,
+            [String]$a
+        ){
+            $this.GroupId = $g
+            $this.Teams = $t
+            $this.Channel = $c
+            $this.Access = $a
+        }
+    }
+
     $Report = foreach($Team in $Teams){
         Write-Progress -Activity "Teams :" -Status $Team.DisplayName -Id 0 -PercentComplete (($i/$iMax)*100)
         $Channels = Get-TeamChannel -GroupId $Team.GroupId
@@ -32,13 +50,7 @@ function Get-TeamsChannelAccess {
             $ChannelPermissions = Get-TeamChannelUser -GroupId $Team.GroupId -DisplayName $Channel.DisplayName
             if($ChannelPermissions.User -contains $User){
                 $UserInfo = $ChannelPermissions[$ChannelPermissions.User.IndexOf($User)]
-                [PsCustomObject]@{
-                    GroupId = $Team.GroupId
-                    Teams = $Team.DisplayName
-                    Channel = $Channel.DisplayName
-                    Type = $Channel.MembershipType
-                    Access = $UserInfo.Role
-                }
+                [TeamsPermission]::new($Team.GroupId,$Team.DisplayName,$Channel.DisplayName,$UserInfo)
             }
             $j++
         }
@@ -93,8 +105,7 @@ try{
     Get-Team -User $Identity -ErrorAction Stop
 }
 catch{
-    Write-Warning "$Identity couldn't be found."
-    return
+    throw "$Identity couldn't be found."
 }
 
 # Lists the $Template user's existing Teams access.
@@ -104,13 +115,16 @@ if($Template -like "*@*.*"){
         $TemplateTeams = Get-TeamsChannelAccess -User $Template -ErrorAction Stop
     }
     catch{
-        Write-Warning "$Template couldn't be found."
-        return
+        throw "$Template couldn't be found."
     }
 }elseif (Test-Path -Path $Template -PathType Leaf) {
-    $TemplateTeams = Import-Csv -Path $Template -Encoding UTF8
+    try{
+        $TemplateTeams = Import-Csv -Path $Template -Encoding UTF8 -ErrorAction Stop
+    }catch{
+        throw "Failed to import: $Template"
+    }
 }else{
-
+    throw 'Invalid Template parameter.'
 }
 
 ###########################################################
@@ -175,3 +189,58 @@ foreach($Channel in $Channels){
         Write-Error "Failed to add user to channel : $($Channel.Channel)"
     }
 }
+
+<#
+    .SYNOPSIS
+
+    Copies a user's Teams permissions onto another.
+
+    .DESCRIPTION
+
+    Replicates a user's Teams channel membership onto another user.
+
+    .PARAMETER Template
+
+    UserPrincipalName of the user you want to replicate the permissions of.
+    This can alse be a CSV file containing the template user's permissions. The CSV would have to been generated using the AccessReport.ps1 script.
+
+    .PARAMETER Identity
+
+    User on which the permissions are to be applied.
+
+    .PARAMETER IncludeRights
+
+    Will replicate the exact permissions the user. If not mentionned, the given user will be added as member or guest to each Teams.
+
+    .PARAMETER Select
+
+    Will prompt you with the existing permissions and will ask you to point out which ones you wish to copy over.
+
+    .INPUTS
+
+    None. You cannot pipe objects into AccessCopy.ps1 .
+
+    .OUTPUTS
+
+    None.
+
+    .LINK
+
+    Get-Team
+
+    .LINK
+
+    Get-TeamChannelUser
+
+    .LINK
+
+    Get-TeamChannel
+
+    .LINK
+
+    Add-TeamUser
+
+    .LINK
+
+    Add-TeamChannelUser
+#>
