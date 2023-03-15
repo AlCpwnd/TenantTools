@@ -202,7 +202,7 @@ foreach($Channel in $Channels){
     .PARAMETER Template
 
     UserPrincipalName of the user you want to replicate the permissions of.
-    This can alse be a CSV file containing the template user's permissions. The CSV would have to been generated using the AccessReport.ps1 script.
+    This can alse be the path to a CSV file containing the template user's permissions. The CSV would have to been generated using the AccessReport.ps1 script.
 
     .PARAMETER Identity
 
@@ -223,6 +223,18 @@ foreach($Channel in $Channels){
     .OUTPUTS
 
     None.
+
+    .EXAMPLE
+
+    >PS AccessCopy.ps1 -Template 'j.smith@contosco.com' -Identity 'j.doe@contosco.com
+
+    .EXAMPLE
+
+    >PS AccessCopy.ps1 -Template 'j.smith@contosco.com' -Identity 'j.doe@contosco.com -IncludeRights
+
+    .EXAMPLE
+
+    >PS AccessCopy.ps1 -Template '.\Permissions.csv' -Identity 'j.doe@contosco.com -Select
 
     .LINK
 

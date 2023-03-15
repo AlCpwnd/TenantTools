@@ -9,7 +9,7 @@ Write-Host "> Recovering tenant information..."
 
 # Recovering existing mailboxes
 try{
-    $Mailboxes = Get-EXOMailbox -ErrorAction Stop | Select UserPrincipalName,RecipientTypeDetails
+    $Mailboxes = Get-EXOMailbox -ErrorAction Stop | Select-Object UserPrincipalName,RecipientTypeDetails
 }catch{
     Write-Host "! Failed to recover mailboxes. Please make sure ExchangeOnlineManagement is connected an try again." -ForegroundColor Red
     return
