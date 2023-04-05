@@ -1,3 +1,4 @@
+[CmdletBinding()]
 param(
     [switch]$Export,
     [String]$Path
@@ -23,6 +24,7 @@ try{
     Throw "! Failed to recover licenses. Please make sure MSOnline is connected and try again."
 }
 
+Write-Host "License Name are from 05/12/2022."
 # Recovered from https://learn.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference on 05/12/2022
 $LicenseTable = @{
     ADV_COMMS = "Advanced Communications"
