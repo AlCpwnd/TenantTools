@@ -5,22 +5,22 @@ param(
 
 #Requires -Modules ExchangeOnlineManagement,MSOnline
 
-Write-Host "> Recovering tenant information..."
+Write-Host "Recovering tenant information..."
 
 # Recovering existing mailboxes
 try{
+    Write-Verbose "Recovering existing mailboxes."
     $Mailboxes = Get-EXOMailbox -ErrorAction Stop | Select-Object UserPrincipalName,RecipientTypeDetails
 }catch{
-    Write-Host "! Failed to recover mailboxes. Please make sure ExchangeOnlineManagement is connected an try again." -ForegroundColor Red
-    return
+    Throw "! Failed to recover mailboxes. Please make sure ExchangeOnlineManagement is connected an try again."
 }
 
 # Recovering licenses
 try{
+    Write-Verbose "Recovering existing users."
     $Licenses = Get-MsolUser -All -ErrorAction Stop | Where-Object{$_.UserType -eq "Member"} | Sort-Object UserPrincipalName
 }catch{
-    Write-Host "! Failed to recover licenses. Please make sure MSOnline is connected and try again." -ForegroundColor Red
-    return
+    Throw "! Failed to recover licenses. Please make sure MSOnline is connected and try again."
 }
 
 # Recovered from https://learn.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference on 05/12/2022
@@ -387,7 +387,7 @@ if($Export){
         NoTypeInformation = $true
     }
     if($Path){
-        if(Test-Path -Path $Path -PathType Leaf){
+        if(Test-Path -Path $Path -PathType Leaf -IsValid){
             $Param.Path = $Path
         }else{
             Write-Host "! Invalid path, exporting to default file." -ForegroundColor Red
@@ -398,3 +398,43 @@ if($Export){
 }else{
     return $Report
 }
+
+<#
+.SYNOPSIS
+Returns existing users and their associated licenses.
+
+.DESCRIPTION
+Return a CSV file containing all tenant members and the name of their associated licenses.
+
+.PARAMETER Export
+If enabled, will export the output into a CSV file.
+
+.PARAMETER Path
+Path of the CSV file you want the data to be exported to.
+
+.INPUTS
+None. You cannot pipe objects to UserReport.ps1.
+
+.OUTPUTS
+Array containging the license information.
+
+.EXAMPLE
+PS> extension -name "File"
+File.txt
+
+.EXAMPLE
+
+PS> extension -name "File" -extension "doc"
+File.doc
+
+.EXAMPLE
+
+PS> extension "File" "doc"
+File.doc
+
+.LINK
+Get-EXOMailbox
+
+.LINK
+Get-MsolUser
+#>
