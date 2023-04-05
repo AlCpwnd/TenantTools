@@ -24,7 +24,7 @@ try{
     Throw "! Failed to recover licenses. Please make sure MSOnline is connected and try again."
 }
 
-Write-Host "License Name are from 05/12/2022."
+Write-Host "License Names are from 05/12/2022."
 # Recovered from https://learn.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference on 05/12/2022
 $LicenseTable = @{
     ADV_COMMS = "Advanced Communications"
@@ -366,17 +366,44 @@ $LicenseTable = @{
 
 Write-Host "> Generating report..."
 
+class UserInfo {
+    [String]$Name
+    [String]$UserName
+    [String]$MailboxType
+    [Bool]$DirSynced
+    [String]$Licenses
+    UserInfo(
+        [String]$n,
+        [String]$u,
+        [String]$m,
+        [Bool]$d,
+        [String]$l
+    ){
+        $This.Name = $n
+        $this.UserName = $u
+        $this.MailboxType = $m
+        $this.DirSynced = $d
+        $this.licenses = $l
+    }
+}
+
 $i = 0
 $iMax = $Licenses.Count
 $Report = foreach($User in $Licenses){
     Write-Progress -Activity "Documenting users..." -Status $User.UserPrincipalName -PercentComplete (($i/$iMax)*100)
     $UserLicenses = $User.licenses | ForEach-Object{$LicenseTable[$_.AccountSkuId.Split(":")[1]]}
-    [PSCustomObject]@{
-        Name = $User.DisplayName
-        UserName = $User.UserPrincipalName
-        MailboxType = $Mailboxes.RecipientTypeDetails[$Mailboxes.UserprincipalName.IndexOf($User.UserPrincipalName)]
-        Licenses = $UserLicenses -Join ","
+    if($User.LastDirSyncTime){
+        $DirSync = $true
+    }else{
+        $DirSync = $false
     }
+    [UserInfo]::new(
+        $User.DisplayName,
+        $User.UserPrincipalName,
+        $Mailboxes.RecipientTypeDetails[$Mailboxes.UserprincipalName.IndexOf($User.UserPrincipalName)],
+        $DirSync,
+        $UserLicenses -Join ","
+    )
     $i++
 }
 
@@ -418,21 +445,12 @@ Path of the CSV file you want the data to be exported to.
 None. You cannot pipe objects to UserReport.ps1.
 
 .OUTPUTS
-Array containging the license information.
-
-.EXAMPLE
-PS> extension -name "File"
-File.txt
-
-.EXAMPLE
-
-PS> extension -name "File" -extension "doc"
-File.doc
-
-.EXAMPLE
-
-PS> extension "File" "doc"
-File.doc
+Array with the following headers:
+  Name: DisplayName of the mailbox
+  UserName: UserPrincipalName of the mailbox
+  MailboxType: Defines the mailbox type (usermailbox, shared mailbox,...)
+  DisSynced: Defines if the user is AzureAD synced
+  Licenses: List of the licenses assigned to the user
 
 .LINK
 Get-EXOMailbox
