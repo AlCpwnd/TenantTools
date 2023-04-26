@@ -21,7 +21,7 @@ try{
     Write-Verbose "Recovering existing users."
     $Licenses = Get-MsolUser -All -ErrorAction Stop | Where-Object{$_.UserType -eq "Member"} | Sort-Object UserPrincipalName
 }catch{
-    Throw "! Failed to recover licenses. Please make sure MSOnline is connected and try again."
+    Throw "! Failed to recover existing users. Please make sure MSOnline is connected and try again."
 }
 
 Write-Host "License Names are from 05/12/2022."
