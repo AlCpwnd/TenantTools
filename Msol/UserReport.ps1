@@ -369,18 +369,21 @@ Write-Host "> Generating report..."
 class UserInfo {
     [String]$Name
     [String]$UserName
+    [String]$EmailAddress
     [String]$MailboxType
     [Bool]$DirSynced
     [String]$Licenses
     UserInfo(
         [String]$n,
         [String]$u,
+        [String]$e,
         [String]$m,
         [Bool]$d,
         [String]$l
     ){
         $This.Name = $n
         $this.UserName = $u
+        $this.EmailAddress = $e
         $this.MailboxType = $m
         $this.DirSynced = $d
         $this.licenses = $l
@@ -392,6 +395,11 @@ $iMax = $Licenses.Count
 $Report = foreach($User in $Licenses){
     Write-Progress -Activity "Documenting users..." -Status $User.UserPrincipalName -PercentComplete (($i/$iMax)*100)
     $UserLicenses = $User.licenses | ForEach-Object{$LicenseTable[$_.AccountSkuId.Split(":")[1]]}
+    if($User.ProxyAddresses){
+        $EmailAddress = ($User.ProxyAddresses | Where-Object{$_ -cmatch 'SMTP'}).split(":")[1]
+    }else{
+        $EmailAddress = $User.UserPrincipalName
+    }
     if($User.LastDirSyncTime){
         $DirSync = $true
     }else{
@@ -400,6 +408,7 @@ $Report = foreach($User in $Licenses){
     [UserInfo]::new(
         $User.DisplayName,
         $User.UserPrincipalName,
+        $EmailAddress,
         $Mailboxes.RecipientTypeDetails[$Mailboxes.UserprincipalName.IndexOf($User.UserPrincipalName)],
         $DirSync,
         $UserLicenses -Join ","
@@ -448,6 +457,7 @@ None. You cannot pipe objects to UserReport.ps1.
 Array with the following headers:
   Name: DisplayName of the mailbox
   UserName: UserPrincipalName of the mailbox
+  EmailAddress: Associated emailaddress
   MailboxType: Defines the mailbox type (usermailbox, shared mailbox,...)
   DisSynced: Defines if the user is AzureAD synced
   Licenses: List of the licenses assigned to the user
