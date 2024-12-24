@@ -4,7 +4,7 @@ param(
     [String]$Path
 )
 #Requires -Modules MicrosoftTeams
-function Show-Info {param ([Parameter(Mandatory,Position=0)][String]$Message)Write-Host "`t(i)$Message" -ForegroundColor Gray}
+function Show-Info {param ([Parameter(Mandatory,Position=0)][String]$Message)Write-Host "`n(i)$Message" -ForegroundColor Gray}
 
 try{Get-CsTenant|Out-Null}catch{throw "Please connect the Microsoft Teams Services"}
 
@@ -39,15 +39,24 @@ $i = 0
 $iMax = $Teams.Count
 
 $Report = foreach($Team in $Teams){
-    Write-Progress -Activity "Documenting Teams" -Status $Team.DisplayName -PercentComplete ($i/$iMax*100) -Id 0
+    Write-Progress -Activity "Documenting Teams[$i/$iMax]" -Status $Team.DisplayName -PercentComplete ($i/$iMax*100) -Id 0
+    Write-Host "Teams: $($Team.DisplayName)"
     $Channels = Get-TeamChannel -GroupId $Team.GroupId
     $j = 0
     $jMax = $Channels.Count
     foreach($Channel in $Channels){
-        Write-Progress -Activity "Documenting Channels" -Status $Channel.DisplayName -PercentComplete ($j/$jMax*100) -Id 1 -ParentId 0
-        $ChannelUsers = Get-TeamChannelUser -GroupId $Team.GroupId -DisplayName $Channel.DisplayName
+        [String]$ChannelName = $Channel.DisplayName
+        Write-Progress -Activity "Documenting Channels[$j/$jMax]" -Status $ChannelName -PercentComplete ($j/$jMax*100) -Id 1 -ParentId 0
+        $ChannelUsers = Get-TeamChannelUser -GroupId $Team.GroupId -DisplayName $ChannelName
         if($ChannelUsers.user -contains $User){
-            [TeamsPermission]::new($Team.GroupId,$Team.DisplayName,$Channel.DisplayName,$ChannelUsers.Role[$ChannelUsers.User.IndexOf($User)])
+            $Role = $ChannelUsers.Role[$ChannelUsers.User.IndexOf($User)]
+            [TeamsPermission]::new(
+                $Team.GroupId,
+                $Team.DisplayName,
+                $Channel.DisplayName,
+                $Role
+            )
+            Write-Host "`tChannel: $($Channel.DisplayName) [$Role]"
         }
         $j++
     }
