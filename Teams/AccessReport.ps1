@@ -21,16 +21,19 @@ class TeamsPermission{
     [String]$GroupId
     [String]$Teams
     [String]$Channel
+    [String]$Type
     [String]$Access
     TeamsPermission(
         [String]$g,
         [String]$t,
         [String]$c,
+        [String]$ty,
         [String]$a
     ){
         $this.GroupId = $g
         $this.Teams = $t
         $this.Channel = $c
+        $this.Type = $ty
         $this.Access = $a
     }
 }
@@ -54,6 +57,7 @@ $Report = foreach($Team in $Teams){
                 $Team.GroupId,
                 $Team.DisplayName,
                 $Channel.DisplayName,
+                $Channel.MembershipType,
                 $Role
             )
             Write-Host "`tChannel: $($Channel.DisplayName) [$Role]"
