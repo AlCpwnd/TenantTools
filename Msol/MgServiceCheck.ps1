@@ -9,6 +9,7 @@ if($MissingScopes){
     Connect-MgGraph -Scopes $MissingScopes
 }
 
+Write-Host "Recovering license types."
 $Licenses = Get-MgSubscribedSku | Where-Object{$_.AppliesTo -eq 'User' -and $_.CapabilityStatus -ne 'Suspended'}
 
 class UserLicense {
@@ -29,12 +30,7 @@ class UserLicense {
     }
 }
 
-# $Template = [UserLicense]::new()
-
-# foreach($License in $Licenses){
-#     $Template | Add-Member -NotePropertyName $License.SkuPartNumber -NotePropertyValue $false
-# }
-
+Write-Host "Recovering users."
 $Users = Get-MgUser -All:$true
 
 $i = 1
