@@ -42,6 +42,9 @@ $iMax = $Users.Count
 $Report = foreach($User in $Users){
     Write-Progress -Activity "Documenting Users" -Status $User.DisplayName -PercentComplete (($i/$iMax)*100)
     $UserInfo = Get-MgUser -UserId $User.Id -Property assignedLicenses,userType
+    if($UserInfo.AssignedLicenses.Count -eq 0){
+        continue
+    }
     $Temp = [UserLicense]::new()
     $Temp.ObjectId = $User.Id
     $Temp.DisplayName = $User.DisplayName
