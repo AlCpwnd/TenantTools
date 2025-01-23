@@ -10,7 +10,7 @@ if($MissingScopes){
 }
 
 Write-Host "Recovering license types."
-$Licenses = Get-MgSubscribedSku | Where-Object{$_.AppliesTo -eq 'User' -and $_.CapabilityStatus -ne 'Suspended'}
+$Licenses = Get-MgSubscribedSku | Where-Object{$_.AppliesTo -eq 'User' -and $_.CapabilityStatus -ne 'Suspended' -and $_.ConsumedUnits}
 
 class UserLicense {
     [String]$ObjectId
