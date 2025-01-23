@@ -62,6 +62,10 @@ Write-Progress -Activity "Documenting Users" -Completed
 $Path = "$PSScriptRoot\$(Get-Date -Format yyyyMMdd)_LicenseReport.csv" 
 $i = 1
 while(Test-Path -Path $Path){
+    if($Path -like "*(*).csv"){
+        $i ++
+        $Path = $Path.Replace("($($i-1)).csv","($i).csv")
+    }else{
     $Path = $Path.Replace(".csv"," ($i).csv")
     $i ++
 }
