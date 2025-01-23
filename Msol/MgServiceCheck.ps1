@@ -36,7 +36,8 @@ $Users = Get-MgUser -All:$true
 $i = 1
 $iMax = $Users.Count
 $Report = foreach($User in $Users){
-    Write-Progress -Activity "Documenting Users" -Status $User.DisplayName -PercentComplete (($i/$iMax)*100)
+    Write-Progress -Activity "Documenting Users[$i/$iMax]" -Status $User.DisplayName -PercentComplete (($i/$iMax)*100)
+    $i++
     $UserInfo = Get-MgUser -UserId $User.Id -Property assignedLicenses,userType
     if($UserInfo.AssignedLicenses.Count -eq 0){
         continue
@@ -55,7 +56,6 @@ $Report = foreach($User in $Users){
         $Temp | Add-Member -NotePropertyName $License.SkuPartNumber -NotePropertyValue $Test
     }
     $Temp
-    $i++
 }
 Write-Progress -Activity "Documenting Users" -Completed
 
