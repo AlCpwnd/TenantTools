@@ -66,8 +66,8 @@ while(Test-Path -Path $Path){
         $i ++
         $Path = $Path.Replace("($($i-1)).csv","($i).csv")
     }else{
-    $Path = $Path.Replace(".csv"," ($i).csv")
-    $i ++
+        $Path = $Path.Replace(".csv"," ($i).csv")
+    }
 }
 
 Write-Host "File saved under: $Path"
