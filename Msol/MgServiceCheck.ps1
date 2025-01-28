@@ -72,3 +72,28 @@ while(Test-Path -Path $Path){
 
 Write-Host "File saved under: $Path"
 $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
+
+<#
+    .SYNOPSIS
+    Returns a matrix of the users and licenses.
+
+    .DESCRIPTION
+    The script will attempt to connect to the Graph API using the
+    required scopes. If the current scopes aren't sufficient, it will
+    attempt to add the missing scropes to the current session.
+    Returns a matrix detailing which license are assined to which users.
+
+    .INPUTS
+    None. You cannot pipe objects to MgServiceCheck.ps1.
+
+    .OUTPUTS
+    A CSV file named using the following template: 
+    <Date formatted yyyyMMdd>_LicenseReport.csv
+    This file will be outputted in the current script directory.
+
+    .LINK
+    Get-MgUser
+
+    .LINK
+    Get-MgSubscribedSku
+#>
