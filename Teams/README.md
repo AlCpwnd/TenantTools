@@ -178,3 +178,35 @@ Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
+
+---
+
+## MgTeamsStructure.ps1
+
+### Synopsis
+
+Reports the current Teams and Channels structure.
+
+### Syntax
+
+```
+MgTeamsStructure.ps1 [<CommonParameters>]
+```
+
+### Description
+
+Returns a CSV containing the Teams, their access type, the Channel 
+and their access type. Using the Microsoft Graph API
+
+### Examples
+
+#### Example 1
+
+```ps
+MgTeamsStructure.ps1
+```
+
+### Related Links
+
+* [Get-MgTeam](https://learn.microsoft.com/powershell/module/microsoft.graph.teams/get-mgteam
+* [Get-MgTeamChannel](https://learn.microsoft.com/powershell/module/microsoft.graph.teams/get-mgteamchannel
