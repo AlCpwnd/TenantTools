@@ -5,10 +5,10 @@ param(
 
 #Requires -Modules PnP.PowerShell
 
-$RecyclyBinContents = Get-PnPRecycleBinItem
+$RecycleBinContents = Get-PnPRecycleBinItem
 if($User){
-    $UserFilteredContents = $RecyclyBinContents | Where-Object{$_.DeletedByEmail -eq $User}
-    $RecyclyBinContents = $UserFilteredContents
+    $UserFilteredContents = $RecycleBinContents | Where-Object{$_.DeletedByEmail -eq $User}
+    $RecycleBinContents = $UserFilteredContents
     if(!$UserFilteredContents){
         throw "No deleted items found for given user: $User"
     }
@@ -17,17 +17,17 @@ if($User){
 if($Date){
     try{
         $Date = Get-Date $Date -ErrorAction Stop
-        $DateFilteredContents = $RecyclyBinContents | Where-Object{$_.DeletedDate -le $Date}
-        $RecyclyBinContents = $DateFilteredContents
+        $DateFilteredContents = $RecycleBinContents | Where-Object{$_.DeletedDate -le $Date}
+        $RecycleBinContents = $DateFilteredContents
     }catch{
         throw "Failed to conver $Date to DateTime variable"
     }
 }
 
 $i = 0
-$iMax = $RecyclyBinContents.Count
+$iMax = $RecycleBinContents.Count
 
-$Global:Errors = foreach($Item in $RecyclyBinContents){
+$Global:Errors = foreach($Item in $RecycleBinContents){
     Write-Progress -Activity 'Restoring' -Status $Item.Title -PercentComplete (($i/$iMax)*100)
     try{
         Get-PnPRecycleBinItem -Identity $Item.Id | Restore-PnPRecycleBinItem -Force -ErrorAction Stop
@@ -44,5 +44,5 @@ if($Errors){
     }
     Write-Host 'Failed to restore the following items:' @HighLIght
     $Global:Errors
-    Write-Host "Entrie stored in `'`$Global:Errors`' variable" @HighLIght
+    Write-Host "Entries stored in `'`$Global:Errors`' variable" @HighLIght
 }
