@@ -1,6 +1,11 @@
 param(
+    [Parameter(ParameterSetName='User')]
     [string]$User,
-    [string]$Date
+    [Parameter(ParameterSetName='Date')]
+    [string]$Date,
+    [Parameter(ParameterSetName='Date')]
+    [Parameter(ParameterSetName='User')]
+    [switch]$ReportOnly
 )
 
 #Requires -Modules PnP.PowerShell
@@ -22,6 +27,12 @@ if($Date){
     }catch{
         throw "Failed to convert $Date to DateTime variable"
     }
+}
+
+if($ReportOnly){
+    Write-Host "Files available for restoring "
+    $RecycleBinContents | Select-Object DeletedDate,DeletedByName,ItemType,LeafName
+    return
 }
 
 $i = 0
@@ -46,3 +57,39 @@ if($Errors){
     $Global:Errors
     Write-Host "Entries stored in `'`$Global:Errors`' variable" @HighLIght
 }
+
+
+<#
+    .SYNOPSIS
+    Copies a user's Teams permissions onto another.
+
+    .DESCRIPTION
+    Replicates a user's Teams channel membership onto another user.
+
+    .PARAMETER User
+    UserPrincipalName of the user who deleted the files.
+
+    .PARAMETER Date
+    Date at which the files were removed.
+
+    .PARAMETER ReportOnly
+    Will only list the file
+
+    .INPUTS
+    None. You cannot pipe objects into FileRestore.ps1 .
+
+    .OUTPUTS
+    None.
+
+    .EXAMPLE
+    >PS FileRestore.ps1 -User 'j.smith@contosco.com'
+
+    .EXAMPLE
+    >PS FileRestore.ps1 -Date '27/07/2006'
+
+    .LINK
+    Get-PnPRecycleBinItem
+
+    .LINK
+    Restore-PnPRecycleBinItem
+#>
