@@ -603,27 +603,27 @@ class UserLicense {
 }
 
 Write-Host "Recovering users."
-$Users = Get-MgUser -All:$true
+$Users = Get-MgUser -All:$true -Property Id,Mail,DisplayName,userType,assignedLicenses
 
 $i = 1
 $iMax = $Users.Count
 $Report = foreach($User in $Users){
     Write-Progress -Activity "Documenting Users[$i/$iMax]" -Status $User.DisplayName -PercentComplete (($i/$iMax)*100)
     $i++
-    $UserInfo = Get-MgUser -UserId $User.Id -Property assignedLicenses,userType
-    if($UserInfo.AssignedLicenses.Count -eq 0){
+    # $UserInfo = Get-MgUser -UserId $User.Id -Property assignedLicenses,userType
+    if($User.AssignedLicenses.Count -eq 0){
         continue
     }
     $Temp = [UserLicense]::new()
     $Temp.ObjectId = $User.Id
     $Temp.DisplayName = $User.DisplayName
     $Temp.Mail = $User.Mail
-    $Temp.Type = $UserInfo.UserType
+    $Temp.Type = $User.UserType
     foreach($License in $Licenses){
         if($SkipTrial -and $License.DisplayName -match 'Free|Trial'){
             continue
         }
-        if($UserInfo.AssignedLicenses.SkuId -contains $License.SkuId){
+        if($User.AssignedLicenses.SkuId -contains $License.SkuId){
             $Test = $true
         }else{
             $Test = $false
@@ -648,6 +648,7 @@ while(Test-Path -Path $Path){
 Write-Host "File saved under: $Path"
 $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
 
+
 <#
     .SYNOPSIS
     Returns a matrix of the users and licenses.
@@ -662,7 +663,7 @@ $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
     Will skip licences containing "Trial" or "Free" within their name.
 
     .INPUTS
-    None. You cannot pipe objects to MgServiceCheck.ps1.
+    None. You cannot pipe objects to LicenseReport.ps1.
 
     .OUTPUTS
     A CSV file named using the following template: 

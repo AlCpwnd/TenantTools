@@ -86,7 +86,7 @@ Write-Host "File saved under: $Path"
 
     .INPUTS
 
-    None. You cannot pipe objects into MgTeamsStructure.ps1 .
+    None. You cannot pipe objects into TeamsStructure.ps1 .
 
     .OUTPUTS
 
@@ -94,7 +94,7 @@ Write-Host "File saved under: $Path"
 
     .EXAMPLE
 
-    PS> MgTeamsStructure.ps1
+    PS> TeamsStructure.ps1
 
     .LINK
 
