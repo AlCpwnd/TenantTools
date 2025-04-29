@@ -20,7 +20,7 @@ if($Date){
         $DateFilteredContents = $RecycleBinContents | Where-Object{$_.DeletedDate -le $Date}
         $RecycleBinContents = $DateFilteredContents
     }catch{
-        throw "Failed to conver $Date to DateTime variable"
+        throw "Failed to convert $Date to DateTime variable"
     }
 }
 
