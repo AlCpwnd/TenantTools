@@ -45,7 +45,11 @@ $Report = foreach($Team in $Teams){
     $Channels = Get-MgTeamChannel -TeamId $Team.Id
     $j = 0
     $jMax = $Channels.Count
-    $general = $Channels[$Channels.DisplayName.IndexOf('General')]
+    if($Channels[0]){
+        $general = $Channels[$Channels.DisplayName.IndexOf('General')]
+    }else{
+        $general = $Channels
+    }
     [TeamsPermission]::new(
         $Team.Id,
         $Team.DisplayName,
