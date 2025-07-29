@@ -9,7 +9,7 @@ param(
     [Switch]$Select
 )
 
-# Fuctions : ##############################################
+# Functions : ##############################################
 
 function Get-TeamsChannelAccess {
     param(
@@ -202,7 +202,7 @@ foreach($Channel in $Channels){
     .PARAMETER Template
 
     UserPrincipalName of the user you want to replicate the permissions of.
-    This can alse be the path to a CSV file containing the template user's permissions. The CSV would have to been generated using the AccessReport.ps1 script.
+    This can also be the path to a CSV file containing the template user's permissions. The CSV would have to been generated using the AccessReport.ps1 script.
 
     .PARAMETER Identity
 
@@ -210,7 +210,7 @@ foreach($Channel in $Channels){
 
     .PARAMETER IncludeRights
 
-    Will replicate the exact permissions the user. If not mentionned, the given user will be added as member or guest to each Teams.
+    Will replicate the exact permissions the user. If not mentioned, the given user will be added as member or guest to each Teams.
 
     .PARAMETER Select
 
