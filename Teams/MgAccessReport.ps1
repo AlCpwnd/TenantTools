@@ -44,18 +44,15 @@ class TeamsPermission{
 
 if($PSCmdlet.ParameterSetName -eq "Single"){
     $UserInfo = Get-MgUser -UserId $User
-    $UserGroups = Get-MgUserMemberOf -UserId $UserInfo.Id
-    
-    $Teams = Get-MgTeam -All:$true
-    $UserTeams = $Teams | Where-Object{$UserGroups.Id -contains $_.Id}
+    $Teams = Get-MgUserJoinedTeam -UserId $UserInfo.Id
 }else{
-    $UserTeams = Get-MgTeam -All:$true
+    $Teams = Get-MgTeam -All:$true
 }
 
 $i = 0
-$iMax = $UserTeams.Count
+$iMax = $Teams.Count
 
-$Report = foreach($Team in $UserTeams){
+$Report = foreach($Team in $Teams){
     $i ++
     Write-Progress -Activity "Documenting Teams [$i/$iMax]" -Status $Team.DisplayName -Id 0 -PercentComplete (($i/$iMax)*100)
     $Channels = Get-MgTeamChannel -TeamId $Team.Id
