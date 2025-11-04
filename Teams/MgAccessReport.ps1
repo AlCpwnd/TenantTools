@@ -67,28 +67,8 @@ $Report = foreach($Team in $Teams){
             Write-Progress -Activity "Documenting Channels [$j/$jMax]" -Status $Channel.DisplayName -Id 1 -PercentComplete (($j/$jMax)*100) -ParentId 0
         }
         # Get-MgChannelMember command isn't working atm. Going through API calls as an alternative.
-        # $Members = Get-MgTeamChannelMember -TeamId $Team.Id -ChannelId $Channel.Id
         $Members = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($Team.Id)/channels/$($Channel.Id)/members").value
-        if(
-            $Members.AdditionalProperties.Values -contains $UserInfo.Id -and
-            $PSCmdlet.ParameterSetName -eq "Single"
-        ){
-            $UserPermission = $Members[$Members.DisplayName.IndexOf($UserInfo.DisplayName)].Roles
-            if($UserPermission.Roles){
-                $Role = $UserPermission.Roles[0]
-            }else{
-                $Role = 'Member'
-            }
-            [TeamsPermission]::new(
-                $Team.Id,
-                $Team.DisplayName,
-                $Channel.Id,
-                $Channel.DisplayName,
-                $Channel.MembershipType,
-                $UserInfo.DisplayName,
-                $Role
-            )
-        }else{
+        if($PSCmdlet.ParameterSetName -eq "All"){
             foreach($member in $Members){
                 if($member.Roles){
                     $Role = $member.Roles[0]
@@ -105,6 +85,22 @@ $Report = foreach($Team in $Teams){
                     $Role
                 )
             }
+        }elseif($Members.userId -contains $UserInfo.Id){
+            $UserPermission = $Members[$Members.UserId.IndexOf($UserInfo.Id)].Roles
+            if($UserPermission){
+                $Role = $UserPermission[0]
+            }else{
+                $Role = 'Member'
+            }
+            [TeamsPermission]::new(
+                $Team.Id,
+                $Team.DisplayName,
+                $Channel.Id,
+                $Channel.DisplayName,
+                $Channel.MembershipType,
+                $UserInfo.DisplayName,
+                $Role
+            )
         }
     }
     Write-Progress -Activity "Documenting Channels [$j/$jMax]" -Status $Channel.DisplayName -Id 1 -ParentId 0 -Completed
