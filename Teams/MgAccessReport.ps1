@@ -11,7 +11,9 @@ $scopes = 'User.Read.All','TeamSettings.Read.All','ChannelSettings.Read.All','Ch
 $MissingScopes = $scopes | Where-Object{(Get-MgContext).Scopes -notcontains $_}
 
 if($MissingScopes){
-    Write-Host "Scopes missing:$($scopes -join ',')"
+    Write-Host "Scopes missing:" -ForegroundColor Yellow
+    $scopes | ForEach-Object{Write-Host "`t> $_" -ForegroundColor Yellow}
+    Write-Host "Adding scopes to current environment. Please allow the connection." -ForegroundColor Yellow
     Connect-MgGraph -Scopes $MissingScopes
 }
 
@@ -130,4 +132,4 @@ if(!$Path){
     }
 }
 $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
-Write-Host "File saved under: $Path"
+Write-Host "File saved under: $Path" -ForegroundColor Green
