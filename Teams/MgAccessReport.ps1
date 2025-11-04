@@ -115,7 +115,11 @@ if(!$Path){
     }
     $i = 1
     while(Test-Path -Path $Path){
-        $Path = $Path.Replace(".csv"," ($i).csv")
+        if($Path -match '\(\d+\).csv'){
+            $Path = $Path -replace '\(\d+\).csv'," ($i).csv"
+        }else{
+            $Path = $Path.Replace(".csv"," ($i).csv")
+        }
         $i ++
     }
 }elseif(Test-Path -Path $Path -PathType Container){
