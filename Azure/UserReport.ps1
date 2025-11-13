@@ -48,7 +48,7 @@ catch {
 
 Write-Host "(i) Generating users report."
 
-$report = $users | Select-Object DisplayName, UserPrincipalName, Mail, @{l = 'LastSignIn'; e = { $_.SignInActivity.LastSignInDateTime } }
+$report = $users | Select-Object DisplayName, UserPrincipalName, Mail, @{l = 'LastSignIn'; e = { $_.SignInActivity.LastSignInDateTime.ToString((Get-Culture).DateTimeFormat.ShortDatePattern) } }
 
 Write-Host "(i) Verifying report path."
 
@@ -74,7 +74,7 @@ while(Test-Path -Path $filePath){
     }
 }
 
-$report | Export-Csv -Path $filePath -NoTypeInformation -Encoding utf8
+$report | Export-Csv -Path $filePath
 
 Write-Host "(i) Report exported to: $filePath`n"
 
