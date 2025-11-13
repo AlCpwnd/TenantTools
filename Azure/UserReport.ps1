@@ -33,7 +33,7 @@ try {
             $users = foreach ($member in $members) {
                 Write-Progress -Activity "Recovering user details [$i/$iMax]" -Status $member.displayName -PercentComplete (($i / $iMax) * 100)
                 $i++
-                if($groupMembers.Id -contains $member.Id){
+                if ($groupMembers.Id -contains $member.Id) {
                     $member
                 }
             }
@@ -65,12 +65,13 @@ $filePath = (Get-Location).Path + "\$fileName"
 
 $i = 1
 
-while(Test-Path -Path $filePath){
-    if($filePath -match '\(\d+\).csv'){
+while (Test-Path -Path $filePath) {
+    if ($filePath -match '\(\d+\).csv') {
         $i++
-        $filePath = $filePath -replace '\(\d+\).csv',"($i).csv"
-    }else{
-        $filePath = $filePath -replace '.csv'," ($i).csv"
+        $filePath = $filePath -replace '\(\d+\).csv', "($i).csv"
+    }
+    else {
+        $filePath = $filePath -replace '.csv', " ($i).csv"
     }
 }
 
