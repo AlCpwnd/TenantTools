@@ -20,7 +20,7 @@ if ($missingScopes) {
 
 Write-Host "(i) Recovering users."
 
-$properties = 'DisplayName', 'UserPrincipalName', 'SignInActivity'
+$properties = 'DisplayName', 'UserPrincipalName', 'SignInActivity', 'Mail'
 
 try {
     switch ($PSCmdlet.ParameterSetName) {
@@ -48,7 +48,7 @@ catch {
 
 Write-Host "(i) Generating users report."
 
-$report = $users | Select-Object DisplayName, UserPrincipalName, @{l = 'LastSignIn'; e = { $_.SignInActivity.LastSignInDateTime } }
+$report = $users | Select-Object DisplayName, UserPrincipalName, Mail, @{l = 'LastSignIn'; e = { $_.SignInActivity.LastSignInDateTime } }
 
 Write-Host "(i) Verifying report path."
 
