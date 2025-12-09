@@ -45,7 +45,12 @@ class TeamsPermission{
 }
 
 if($PSCmdlet.ParameterSetName -eq "Single"){
-    $UserInfo = Get-MgUser -UserId $User
+    try{
+        $UserInfo = Get-MgUser -UserId $User -ErrorAction Stop
+    }catch{
+        Write-Host "Could not find corresponding user on tenant: $User" -ForegroundColor Red
+        return
+    }
     $Teams = Get-MgUserJoinedTeam -UserId $UserInfo.Id
 }else{
     $Teams = Get-MgTeam -All:$true
