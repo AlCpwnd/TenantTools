@@ -1,9 +1,21 @@
 #Requires -modules Microsoft.Graph.Teams,Microsoft.Graph.Users
 
 param(
-    [Parameter(Mandatory,ParameterSetName='Single')][String]$User,
-    [Parameter(Mandatory,ParameterSetName='All')][Switch]$All,
-    [String]$Path
+    [Parameter(Mandatory=$true,ParameterSetName='Single')]
+    # Username or ID of the user you want to run a report for
+    [String]$User,
+
+    [Parameter(Mandatory=$true,ParameterSetName='All')]
+    # Exports all existing Teams permissions
+    [Switch]$All,
+
+    [Parameter()]
+    # File path you want to report to be written to
+    [String]$Path,
+
+    [Parameter()]
+    # Will output the report as an Excel file
+    [Switch]$Xlsx
 )
 
 $scopes = 'User.Read.All','TeamSettings.Read.All','ChannelSettings.Read.All','ChannelMember.Read.All'
