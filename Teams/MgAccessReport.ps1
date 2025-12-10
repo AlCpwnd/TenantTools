@@ -115,7 +115,7 @@ $Report = foreach($Team in $Teams){
                 $Channel.Id,
                 $Channel.DisplayName,
                 $Channel.MembershipType,
-                $UserInfo.DisplayName,
+                $UserInfo.Mail,
                 $Role
             )
         }
@@ -174,7 +174,7 @@ Write-Host "File saved under: $Path" -ForegroundColor Green
     - Group DisplayName
     - Channel ID
     - Channel DisplayName
-    - User's DisplayName
+    - User's email address
     - User's permissions
 
     .NOTES
