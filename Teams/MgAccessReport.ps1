@@ -160,3 +160,43 @@ if($Xlsx){
     $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
 }
 Write-Host "File saved under: $Path" -ForegroundColor Green
+
+
+<#
+    .SYNOPSIS
+    Generates a report of the existing Teams permissions.
+
+    .DESCRIPTION
+    Generates a report CSV or Excel report of either all existing Teams permissions or a single 
+    user's Teams permissions.
+    The report return a file containing the following information:
+    - Group ID
+    - Group DisplayName
+    - Channel ID
+    - Channel DisplayName
+    - User's DisplayName
+    - User's permissions
+
+    .NOTES
+    The excel report export requires the module 'ImportExcel' to be installed on the device. If the
+    option is selected and the module isn't present, the script will default to CSV and print a
+    warning.
+    
+    .LINK
+    Get-MgUser
+
+    .LINK
+    Get-MgUserJoinedTeams
+
+    .LINK
+    Get-MgTeam
+    
+    .EXAMPLE
+    PS> MgAccessReport.ps1 -User john.doe@contoso.com -Path .\Report.csv
+    
+    .EXAMPLE
+    PS> MgAccessReport.ps1 -User john.doe@contoso.com -Xlsx
+
+    .EXAMPLE
+    PS> MgAccessReport.ps1 -All
+#>
