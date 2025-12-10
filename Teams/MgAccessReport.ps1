@@ -148,5 +148,15 @@ if(!$Path){
         $i ++
     }
 }
-$Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
+if($Xlsx){
+    if(Get-Module -Name ImportExcel -ListAvailable){
+        $Path = $Path.Replace('.csv','.xlsx')
+        $Report | Export-Excel -Path $Path -WorksheetName Data -TableName Data -TableStyle Medium5 -IncludePivotTable -Show -PivotTableName Report -PivotRows Teams,Channel -PivotColumns Access -PivotData @{Access='Count'} -NoTotalsInPivot
+    }else{
+        Write-Host "The 'ImportExcel' module is required for this feature. Please install it and run the script again.`nDefaulting to CSV export." -ForegroundColor Red
+        $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
+    }
+}else{
+    $Report | Export-Csv -Path $Path -Encoding UTF8 -NoTypeInformation
+}
 Write-Host "File saved under: $Path" -ForegroundColor Green
