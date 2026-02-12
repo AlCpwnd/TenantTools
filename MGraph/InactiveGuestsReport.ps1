@@ -12,6 +12,23 @@ param(
     [String]$FileFormat
 )
 
+function Test-FilePath {
+    param(
+        [Parameter(Mandatory=$true)]
+        # File path that needs to be verified.
+        [System.IO.FileInfo]$Path
+    )
+    $i = 1
+    while(Test-Path -Path $Path){
+        if($Path -match '\(\d+\)\.'){
+            $Path = $Path -replace '\(\d+\)', "($i)"
+        }else{
+            $Path = $Path -replace '\.(?:[0-9a-zA-Z]+)$', "($i)$($Matches[0])"
+        }
+    }
+    return $Path.FullName
+}
+
 $scopes = 'User.Read.All'
 
 $MissingScopes = $scopes | Where-Object { (Get-MgContext).Scopes -notcontains $_ }
@@ -34,16 +51,19 @@ $date = Get-Date -Format yyyyMMdd
 if ($FileFormat -eq 'xlsx') {
     if (Get-Module -Name ImportExcel -ListAvailable) {
         $fileName = (Get-Location).Path + "\{0}_InactiveUsers_{1}Months.xlsx" -f $date, $number
+        $fileName = Test-FilePath -Path $fileName
         $report | Export-Excel -Path $fileName -ClearSheet -WorksheetName Report -TableName ActivityReport
     }
     else {
         Write-Host "The module 'ImportExcel' wasn't found on the device. This module is required for exporting in this format. Defaulting to CSV." -ForegroundColor Red
         $fileName = (Get-Location).Path + "\{0}_InactiveUsers_{1}Months.csv" -f $date, $number
+        $fileName = Test-FilePath -Path $fileName
         $report | Export-Csv -Path $fileName -Encoding utf8
     }
 }
 else {
     $fileName = (Get-Location).Path + "\{0}_InactiveUsers_{1}Months.csv" -f $date, $number
+    $fileName = Test-FilePath -Path $fileName
     $report | Export-Csv -Path $fileName -Encoding utf8
 }
 
