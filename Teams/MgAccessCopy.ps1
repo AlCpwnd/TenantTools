@@ -113,11 +113,11 @@ foreach($team in $templateTeams){
             }
         }
         else{
-            "ADD`tUser added to: $($team.DisplayName) :as: $(if(-not $params.roles){'member'}else{'owner'})" | Write-Log
+            "ADD`t`tUser added to: $($team.DisplayName) :as: $(if(-not $params.roles){'member'}else{'owner'})" | Write-Log
             New-MgTeamMember -TeamId $team.Id -BodyParameter $params
         }
     }elseif($targetTeams.Id -notcontains $team.Id){
-        "ADD`tUser added to: $($team.DisplayName)" | Write-Log
+        "ADD`t`tUser added to: $($team.DisplayName)" | Write-Log
         New-MgTeamMember -TeamId $team.Id -BodyParameter $params
     }
 }
@@ -156,11 +156,11 @@ if($Channels){
                     $params.Remove('user@odata.bind')
                     Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($Channel.Id)/members/$($targetChannelInfo.Id)" -Body $params
                 }else{
-                    "ADD`t[$($team.DisplayName)]>$($Channel.DisplayName) :as: $(if(-not $params.roles){'member'}else{'owner'})" | Write-Log
+                    "ADD`t`t[$($team.DisplayName)]>$($Channel.DisplayName) :as: $(if(-not $params.roles){'member'}else{'owner'})" | Write-Log
                     Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($Channel.Id)/members" -Body $params
                 }
             }else{
-                "ADD`t[$($team.DisplayName)]>$($Channel.DisplayName)" | Write-Log
+                "ADD`t`t[$($team.DisplayName)]>$($Channel.DisplayName)" | Write-Log
                 Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($Channel.Id)/members" -Body $params
             }
         }
