@@ -70,6 +70,7 @@ try{
 }catch{
     Write-Host "Failed to find a user for: $Template" -ForegroundColor Red
     "ERROR`tFailed to find a user for: $Template" | Write-Log
+    "====Script Stop====" | Write-Log
     return
 }
 
@@ -78,6 +79,7 @@ try{
 }catch{
     Write-Host "Failed to find a user for: $Target" -ForegroundColor Red
     "ERROR`tFailed to find a user for: $Template" | Write-Log
+    "====Script Stop====" | Write-Log
     return
 }
 
