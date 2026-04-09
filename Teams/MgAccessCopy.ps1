@@ -166,3 +166,5 @@ if($Channels){
         }
     }
 }
+
+"====Script Stop====" | Write-Log
