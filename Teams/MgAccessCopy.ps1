@@ -119,7 +119,7 @@ foreach($team in $templateTeams){
     if($targetInfo.UserType -eq 'Guest'){
         $params.roles += 'guest'
     }
-    if($IncludeRole){
+    if($IncludeRole -and $params.roles -notcontains 'guest'){
         $templateRole = (Get-MgTeamMember -TeamId $team.Id -Filter "(microsoft.graph.aadUserConversationMember/userId eq '$($templateInfo.Id)')").Roles
         if($templateRole -eq 'owner'){
             $params.roles += 'owner'
