@@ -14,7 +14,7 @@ Copies a user's Teams permissions onto another.
 
 ### Syntax
 
-```
+```txt
 C:\Users\ADJ\Git\TenantTools\Teams\AccessCopy.ps1 [-Template] <String> [-Identity] <String> [-IncludeRights] [-Select] [<CommonParameters>]
 ```
 
@@ -121,7 +121,7 @@ Documents permissions of a user.
 
 ### Syntax
 
-```
+```txt
 AccessReport.ps1 [-User] <String> [[-Path] <String>] [<CommonParameters>]
 ```
 
@@ -189,7 +189,7 @@ Reports the current Teams and Channels structure.
 
 ### Syntax
 
-```
+```txt
 MgTeamsStructure.ps1 [<CommonParameters>]
 ```
 
