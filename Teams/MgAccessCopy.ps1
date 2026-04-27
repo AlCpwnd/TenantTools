@@ -48,11 +48,32 @@ function Write-Log {
     }
 }
 
+function Get-MgUserInfo {
+    param(
+        [Parameter(Mandatory=$true)]
+        # String you want to identify the user by.
+        [System.String]$User
+    )
+    $fields = 'DisplayName','ID','Mail','UserPrincipalName','UserType'
+    if($User -match '^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$'){
+        $output = Get-MgUser -UserId $User -Property $fields | Select-Object $fields
+    }
+    if($User -like "*@*"){
+        $domains = (Get-MgDomain).Id -join '|'
+        if($User -match $domains){
+            $output = Get-MgUser -UserId $User -Property $fields | Select-Object $fields
+        }else{
+            $output = Get-MgUser -Search "Mail:$User" -Property $fields -ConsistencyLevel eventual | Select-Object $fields
+        }
+    }
+    return $output
+}
+
 "====Script Start====" | Write-Log
 
 "INFO`tSetting up environment" | Write-Log
 
-$scopes = 'User.Read.All', 'TeamSettings.ReadWrite.All', 'ChannelSettings.ReadWrite.All', 'ChannelMember.ReadWrite.All', 'GroupMember.ReadWrite.All', 'TeamMember.ReadWrite.All'
+$scopes = 'User.Read.All', 'TeamSettings.ReadWrite.All', 'ChannelSettings.ReadWrite.All', 'ChannelMember.ReadWrite.All', 'GroupMember.ReadWrite.All', 'TeamMember.ReadWrite.All', 'Domain.Read.All'
 
 $MissingScopes = $scopes | Where-Object { (Get-MgContext).Scopes -notcontains $_ }
 
@@ -65,18 +86,16 @@ if ($MissingScopes) {
 
 "INFO`tChecking given users" | Write-Log
 
-try{
-    $templateInfo = Get-MgUser -UserId $Template -ErrorAction Stop
-}catch{
+$templateInfo = Get-MgUserInfo -User $Template
+if(-not $templateInfo){
     Write-Host "Failed to find a user for: $Template" -ForegroundColor Red
     "ERROR`tFailed to find a user for: $Template" | Write-Log
     "====Script Stop====" | Write-Log
     return
 }
 
-try{
-    $targetInfo = Get-MgUser -UserId $Target -ErrorAction Stop
-}catch{
+$targetInfo = Get-MgUserInfo -User $Target
+if(-not $targetInfo){
     Write-Host "Failed to find a user for: $Target" -ForegroundColor Red
     "ERROR`tFailed to find a user for: $Template" | Write-Log
     "====Script Stop====" | Write-Log
@@ -96,6 +115,9 @@ foreach($team in $templateTeams){
         "@odata.type" = "#microsoft.graph.aadUserConversationMember"
         roles = @()
         "user@odata.bind" = "https://graph.microsoft.com/v1.0/users('$($targetInfo.Id)')"
+    }
+    if($targetInfo.UserType -eq 'Guest'){
+        $params.roles += 'guest'
     }
     if($IncludeRole){
         $templateRole = (Get-MgTeamMember -TeamId $team.Id -Filter "(microsoft.graph.aadUserConversationMember/userId eq '$($templateInfo.Id)')").Roles
@@ -124,44 +146,45 @@ foreach($team in $templateTeams){
 
 if($Channels){
     "INFO`tStarting channel addition" | Write-Log
-    foreach($team in $targetTeams){
-        $channels = Get-MgTeamChannel -TeamId $team.Id -Filter "membershipType eq 'private'" -All:$true
-        foreach($Channel in $Channels){
+    foreach($team in $templateTeams){
+        $team
+        # $channels = Get-MgTeamChannel -TeamId $team.Id -Filter "membershipType eq 'private'" -All
+        $channels = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/allChannels?`$filter=membershipType eq 'private'")['value']
+        foreach($channel in $channels){
             $params = @{
                 "@odata.type" = "#microsoft.graph.aadUserConversationMember"
                 roles = @()
                 "user@odata.bind" = "https://graph.microsoft.com/v1.0/users('$($targetInfo.Id)')"
             }
-            $uri = "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($Channel.Id)/members?`$filter=displayName eq '$($targetInfo.DisplayName)' or displayName eq '$($templateInfo.DisplayName)'"
-            $members = (Invoke-MgGraphRequest -Method GET -Uri $uri)['value']
-            if(-not $members){
-                # Template and target aren't part of the channel.
-                continue
+            if($targetInfo.UserType -eq 'Guest'){
+                $params.roles += 'guest'
             }
-            $templateChannelInfo = $members | Where-Object{$_.DisplayName -eq $templateInfo.DisplayName}
+            $templateChannelInfo = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members?`$filter=displayName eq '$($templateInfo.DisplayName)'")['value']
             if(-not $templateChannelInfo){
                 # Template user isn't part of the channel.
                 continue
             }
-            if($IncludeRole){                
+            $targetChannelInfo = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members?`$filter=displayName eq '$($targetInfo.DisplayName)'")['value']
+            if($IncludeRole -and $params.roles -notcontains 'guest'){
                 if($templateChannelInfo.Roles -contains 'owner'){
                     $params.roles += 'owner'
                 }
-                if($members.Count -eq 2){
-                    $targetChannelInfo = $members | Where-Object{$_.DisplayName -eq $targetInfo.DisplayName}
+                if($targetChannelInfo){
                     if($targetChannelInfo.roles -contains 'owner'){
                         continue
                     }
-                    "EDIT`t[$($team.DisplayName)]>$($Channel.DisplayName): promoted to owner" | Write-Log
+                    "EDIT`t[$($team.DisplayName)]>$($channel.DisplayName): promoted to owner" | Write-Log
                     $params.Remove('user@odata.bind')
-                    Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($Channel.Id)/members/$($targetChannelInfo.Id)" -Body $params
+                    Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members/$($targetChannelInfo.Id)" -Body $params
                 }else{
-                    "ADD`t`t[$($team.DisplayName)]>$($Channel.DisplayName) :as: $(if(-not $params.roles){'member'}else{'owner'})" | Write-Log
-                    Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($Channel.Id)/members" -Body $params
+                    "ADD`t`t[$($team.DisplayName)]>$($channel.DisplayName) :as: $(if(-not $params.roles){'member'}else{'owner'})" | Write-Log
+                    Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members" -Body $params
                 }
+            }elseif($targetChannelInfo){
+                continue
             }else{
-                "ADD`t`t[$($team.DisplayName)]>$($Channel.DisplayName)" | Write-Log
-                Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($Channel.Id)/members" -Body $params
+                "ADD`t`t[$($team.DisplayName)]>$($channel.DisplayName)" | Write-Log
+                Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members" -Body $params
             }
         }
     }
