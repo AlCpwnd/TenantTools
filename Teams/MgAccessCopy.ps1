@@ -1,11 +1,16 @@
 #Requires -modules Microsoft.Graph.Authentication,Microsoft.Graph.Teams,Microsoft.Graph.Users
 
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter()]
+    # DisplayName of GUID of the Teams you want to copy the permissions from.
+    # This is used if you want to copy a user's permission on a single Team.
+    [System.String]$Team,
+
+    [Parameter(Mandatory = $true)]
     # Template user of which the permissions need to be copied.
     [System.String]$Template,
 
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     # Target user to which the permissions need to be applied.
     [System.String]$Target,
 
@@ -29,7 +34,7 @@ function Write-Log {
         [String]$LogFile = $Global:LogPath
     )
     begin {
-        if(-not $LogFile){
+        if (-not $LogFile) {
             $LogFile = Split-Path -Leaf $PSCommandPath.Replace('.ps1', '.log')
             $Global:LogPath = $LogFile
         }
@@ -50,19 +55,20 @@ function Write-Log {
 
 function Get-MgUserInfo {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         # String you want to identify the user by.
         [System.String]$User
     )
-    $fields = 'DisplayName','ID','Mail','UserPrincipalName','UserType'
-    if($User -match '^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$'){
+    $fields = 'DisplayName', 'ID', 'Mail', 'UserPrincipalName', 'UserType'
+    if ($User -match '^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$') {
         $output = Get-MgUser -UserId $User -Property $fields | Select-Object $fields
     }
-    if($User -like "*@*"){
+    if ($User -like "*@*") {
         $domains = (Get-MgDomain).Id -join '|'
-        if($User -match $domains){
+        if ($User -match $domains) {
             $output = Get-MgUser -UserId $User -Property $fields | Select-Object $fields
-        }else{
+        }
+        else {
             $output = Get-MgUser -Search "Mail:$User" -Property $fields -ConsistencyLevel eventual | Select-Object $fields
         }
     }
@@ -87,7 +93,7 @@ if ($MissingScopes) {
 "INFO`tChecking given users" | Write-Log
 
 $templateInfo = Get-MgUserInfo -User $Template
-if(-not $templateInfo){
+if (-not $templateInfo) {
     Write-Host "Failed to find a user for: $Template" -ForegroundColor Red
     "ERROR`tFailed to find a user for: $Template" | Write-Log
     "====Script Stop====" | Write-Log
@@ -95,94 +101,115 @@ if(-not $templateInfo){
 }
 
 $targetInfo = Get-MgUserInfo -User $Target
-if(-not $targetInfo){
+if (-not $targetInfo) {
     Write-Host "Failed to find a user for: $Target" -ForegroundColor Red
     "ERROR`tFailed to find a user for: $Template" | Write-Log
     "====Script Stop====" | Write-Log
     return
 }
 
-"INFO`tRecovering Teams access for template: $($templateInfo.DisplayName)" | Write-Log
-$templateTeams = Get-MgUserJoinedTeam -UserId $templateInfo.Id -All:$true
-
-"INFO`tRecovering Teams access for target: $($targetInfo.DisplayName)" | Write-Log
-$targetTeams = Get-MgUserJoinedTeam -UserId $targetInfo.Id -All:$true
+if ($Team) {
+    if ($Team -match '^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$') {
+        $teamInfo = Get-MgTeam -TeamId $Team
+    }
+    else {
+        $teamInfo = Get-MgTeam -Filter "displayName eq '$Team'"
+    }
+    if (-not $teamInfo) {
+        $errorMessage = "Failed to find '$Team' in existing Teams. Please confirm this is a valid Team display name or GUID."
+        Write-Host $errorMessage -ForegroundColor Red
+        "ERROR`t$errorMessage" | Write-Log
+        "====Script Stop====" | Write-Log
+    }
+    $templateTeams = @($TeamInfo)
+}
+else {
+    "INFO`tRecovering Teams access for template: $($templateInfo.DisplayName)" | Write-Log
+    $templateTeams = Get-MgUserJoinedTeam -UserId $templateInfo.Id -All:$true
+    
+    "INFO`tRecovering Teams access for target: $($targetInfo.DisplayName)" | Write-Log
+    $targetTeams = Get-MgUserJoinedTeam -UserId $targetInfo.Id -All:$true
+}
 
 "INFO`tStarting addition to Teams" | Write-Log
 
-foreach($team in $templateTeams){
+foreach ($team in $templateTeams) {
     $params = @{
-        "@odata.type" = "#microsoft.graph.aadUserConversationMember"
-        roles = @()
+        "@odata.type"     = "#microsoft.graph.aadUserConversationMember"
+        roles             = @()
         "user@odata.bind" = "https://graph.microsoft.com/v1.0/users('$($targetInfo.Id)')"
     }
-    if($targetInfo.UserType -eq 'Guest'){
+    if ($targetInfo.UserType -eq 'Guest') {
         $params.roles += 'guest'
     }
-    if($IncludeRole -and $params.roles -notcontains 'guest'){
+    if ($IncludeRole -and $params.roles -notcontains 'guest') {
         $templateRole = (Get-MgTeamMember -TeamId $team.Id -Filter "(microsoft.graph.aadUserConversationMember/userId eq '$($templateInfo.Id)')").Roles
-        if($templateRole -eq 'owner'){
+        if ($templateRole -eq 'owner') {
             $params.roles += 'owner'
         }
-        if($targetTeams.Id -contains $team.Id){
+        if ($targetTeams.Id -contains $team.Id) {
             $targetTeamInfo = Get-MgTeamMember -TeamId $team.Id -Filter "(microsoft.graph.aadUserConversationMember/userId eq '$($targetInfo.Id)')"
-            if($targetTeamInfo.Roles -notcontains 'owner'){
+            if ($targetTeamInfo.Roles -notcontains 'owner') {
                 "EDIT`tPromoted user to owner for: $($team.DisplayName)" | Write-Log
                 $params.Remove('user@odata.bind')
                 Update-MgTeamMember -TeamId $team.Id -ConversationMemberId $targetTeamInfo.Id -BodyParameter $params
-            }else{
+            }
+            else {
                 continue
             }
         }
-        else{
+        else {
             "ADD`t`tUser added to: $($team.DisplayName) :as: $(if(-not $params.roles){'member'}else{'owner'})" | Write-Log
             New-MgTeamMember -TeamId $team.Id -BodyParameter $params
         }
-    }elseif($targetTeams.Id -notcontains $team.Id){
+    }
+    elseif ($targetTeams.Id -notcontains $team.Id) {
         "ADD`t`tUser added to: $($team.DisplayName)" | Write-Log
         New-MgTeamMember -TeamId $team.Id -BodyParameter $params
     }
 }
 
-if($Channels){
+if ($Channels) {
     "INFO`tStarting channel addition" | Write-Log
-    foreach($team in $templateTeams){
-        $team
+    foreach ($team in $templateTeams) {
         # $channels = Get-MgTeamChannel -TeamId $team.Id -Filter "membershipType eq 'private'" -All
         $channels = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/allChannels?`$filter=membershipType eq 'private'")['value']
-        foreach($channel in $channels){
+        foreach ($channel in $channels) {
             $params = @{
-                "@odata.type" = "#microsoft.graph.aadUserConversationMember"
-                roles = @()
+                "@odata.type"     = "#microsoft.graph.aadUserConversationMember"
+                roles             = @()
                 "user@odata.bind" = "https://graph.microsoft.com/v1.0/users('$($targetInfo.Id)')"
             }
-            if($targetInfo.UserType -eq 'Guest'){
+            if ($targetInfo.UserType -eq 'Guest') {
                 $params.roles += 'guest'
             }
             $templateChannelInfo = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members?`$filter=displayName eq '$($templateInfo.DisplayName)'")['value']
-            if(-not $templateChannelInfo){
+            if (-not $templateChannelInfo) {
                 # Template user isn't part of the channel.
                 continue
             }
             $targetChannelInfo = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members?`$filter=displayName eq '$($targetInfo.DisplayName)'")['value']
-            if($IncludeRole -and $params.roles -notcontains 'guest'){
-                if($templateChannelInfo.Roles -contains 'owner'){
+            if ($IncludeRole -and $params.roles -notcontains 'guest') {
+                if ($templateChannelInfo.Roles -contains 'owner') {
                     $params.roles += 'owner'
                 }
-                if($targetChannelInfo){
-                    if($targetChannelInfo.roles -contains 'owner'){
+                if ($targetChannelInfo) {
+                    if ($targetChannelInfo.roles -contains 'owner') {
                         continue
                     }
                     "EDIT`t[$($team.DisplayName)]>$($channel.DisplayName): promoted to owner" | Write-Log
                     $params.Remove('user@odata.bind')
                     Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members/$($targetChannelInfo.Id)" -Body $params
-                }else{
+                }
+                else {
                     "ADD`t`t[$($team.DisplayName)]>$($channel.DisplayName) :as: $(if(-not $params.roles){'member'}else{'owner'})" | Write-Log
                     Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members" -Body $params
                 }
-            }elseif($targetChannelInfo){
+            }
+            elseif ($targetChannelInfo) {
                 continue
-            }else{
+            }
+            else {
                 "ADD`t`t[$($team.DisplayName)]>$($channel.DisplayName)" | Write-Log
                 Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members" -Body $params
             }
@@ -191,3 +218,20 @@ if($Channels){
 }
 
 "====Script Stop====" | Write-Log
+
+
+<#
+    .SYNOPSIS
+    Copies the Teams permissions from a template onto a target.
+
+    .DESCRIPTION
+    The script recovers the template user's Teams access and applies the same to the target user.
+.NOTES
+    Information or caveats about the function e.g. 'This function is not supported in Linux'
+.LINK
+    Specify a URI to a help page, this will show when Get-Help -Online is used.
+.EXAMPLE
+    Test-MyTestFunction -Verbose
+    Explanation of the function or its result. You can include multiple examples with additional .EXAMPLE lines
+#>
+
