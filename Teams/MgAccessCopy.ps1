@@ -4,7 +4,7 @@ param(
     [Parameter()]
     # DisplayName of GUID of the Teams you want to copy the permissions from.
     # This is used if you want to copy a user's permission on a single Team.
-    [System.String]$Team,
+    [System.String]$TargetTeam,
 
     [Parameter(Mandatory = $true)]
     # Template user of which the permissions need to be copied.
@@ -16,7 +16,7 @@ param(
 
     [Parameter()]
     # If the target also needs to be added to the private channels.
-    [Switch]$Channels,
+    [Switch]$CopyChannels,
 
     [Parameter()]
     # Also copy the user's role within the Teams and channels.
@@ -108,28 +108,29 @@ if (-not $targetInfo) {
     return
 }
 
-if ($Team) {
-    if ($Team -match '^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$') {
-        $teamInfo = Get-MgTeam -TeamId $Team
+if ($TargetTeam) {
+    if ($TargetTeam -match '^[{]?[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}[}]?$') {
+        $teamInfo = Get-MgTeam -TeamId $TargetTeam | Select-Object DisplayName, Id
     }
     else {
-        $teamInfo = Get-MgTeam -Filter "displayName eq '$Team'"
+        $teamInfo = Get-MgTeam -Filter "displayName eq '$TargetTeam'" | Select-Object DisplayName, Id
     }
     if (-not $teamInfo) {
-        $errorMessage = "Failed to find '$Team' in existing Teams. Please confirm this is a valid Team display name or GUID."
+        $errorMessage = "Failed to find '$TargetTeam' in existing Teams. Please confirm this is a valid Team display name or GUID."
         Write-Host $errorMessage -ForegroundColor Red
         "ERROR`t$errorMessage" | Write-Log
         "====Script Stop====" | Write-Log
     }
+    "INFO`tCopying existing permissions for Teams: $($TeamInfo.DisplayName)" | Write-Log
     $templateTeams = @($TeamInfo)
 }
 else {
     "INFO`tRecovering Teams access for template: $($templateInfo.DisplayName)" | Write-Log
-    $templateTeams = Get-MgUserJoinedTeam -UserId $templateInfo.Id -All:$true
-    
-    "INFO`tRecovering Teams access for target: $($targetInfo.DisplayName)" | Write-Log
-    $targetTeams = Get-MgUserJoinedTeam -UserId $targetInfo.Id -All:$true
+    $templateTeams = Get-MgUserJoinedTeam -UserId $templateInfo.Id -All:$true | Select-Object DisplayName, Id
 }
+
+"INFO`tRecovering Teams access for target: $($targetInfo.DisplayName)" | Write-Log
+$targetTeams = Get-MgUserJoinedTeam -UserId $targetInfo.Id -All:$true | Select-Object DisplayName, Id
 
 "INFO`tStarting addition to Teams" | Write-Log
 
@@ -169,11 +170,10 @@ foreach ($team in $templateTeams) {
     }
 }
 
-if ($Channels) {
+if ($CopyChannels) {
     "INFO`tStarting channel addition" | Write-Log
     foreach ($team in $templateTeams) {
-        # $channels = Get-MgTeamChannel -TeamId $team.Id -Filter "membershipType eq 'private'" -All
-        $channels = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/allChannels?`$filter=membershipType eq 'private'")['value']
+        $channels = Get-MgTeamChannel -TeamId $team.Id -Filter "membershipType eq 'private'" -All
         foreach ($channel in $channels) {
             $params = @{
                 "@odata.type"     = "#microsoft.graph.aadUserConversationMember"
