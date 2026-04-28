@@ -20,6 +20,8 @@ param(
 
     [Parameter()]
     # Also copy the user's role within the Teams and channels.
+    # If the user is already member of the Team, but with a "lower" access than the template, the
+    # target user will be promoted to the owner. (If the target isn't a guest.)
     [Switch]$IncludeRole
 )
 
@@ -226,12 +228,40 @@ if ($CopyChannels) {
 
     .DESCRIPTION
     The script recovers the template user's Teams access and applies the same to the target user.
-.NOTES
-    Information or caveats about the function e.g. 'This function is not supported in Linux'
-.LINK
-    Specify a URI to a help page, this will show when Get-Help -Online is used.
-.EXAMPLE
-    Test-MyTestFunction -Verbose
-    Explanation of the function or its result. You can include multiple examples with additional .EXAMPLE lines
+    If the target is a guest user, the script will default to adding the user as a guest to all
+    Teams, regardless of 'IncludeRole' switch.
+    All changes will be documented in a log file located at the script root.
+
+    .LINK
+    Get-MgTeam
+
+    .LINK
+    Get-MgTeamUser
+
+    .LINK
+    Get-MgTeamChannel
+
+    .LINK
+    Invoke-MgGraphRequest
+
+    .EXAMPLE
+    PS> .\MgAccessCopy.ps1 -Template john.doe@contoso.com -Target c5c2556b-4eaf-478a-821f-e2ca4ea78a2f
+
+    The Teams access will be copied from the user "john.doe@contoso.com" onto the user with the GUID
+    "c5c2556b-4eaf-478a-821f-e2ca4ea78a2f".
+
+    .EXAMPLE
+    PS> .\MgAccessCopy.ps1 -Template 5105e23e-45bd-4e33-9588-fa69d6f79a6e -Target mike.smith@contoso.com -Channels
+    
+    The Teams and private channel access will be copied from the user with the GUID 
+    "5105e23e-45bd-4e33-9588-fa69d6f79a6e" onto the user "mike.smith@contoso.com", including access 
+    to private channels.
+
+    .EXAMPLE
+    PS> .\MgAccessCopy.ps1 -Template john.doe@contoso.com -Target mike.smith@contoso.com -Channels -IncludeRole
+
+    The Teams and private channel access will be copied from "john.doe@contoso.com" onto 
+    "mike.smith@contoso.com", and the user will be promoted to owner if the template. (Unless the 
+    target user is a guest.)
 #>
 
