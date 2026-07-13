@@ -90,10 +90,11 @@ $report = foreach ($record in $csv) {
 }
 
 if (Get-Module -Name ImportExcel -ListAvailable -ErrorAction SilentlyContinue) {
-    $report | Export-Excel -Show
+    $FilePath = $LogFile -replace '\.csv', '_cleaned.xlsx'
+    $report | Export-Excel -Path $FilePath
 }
 else {
     $FilePath = $LogFile -replace '\.csv', '_cleaned.csv'
     $report | Export-Csv -Path $FilePath -Encoding utf8
-    Write-Host "Cleaned up report exported to: $FilePath`n" -ForegroundColor Green
 }
+Write-Host "Cleaned up report exported to: $FilePath`n" -ForegroundColor Green
