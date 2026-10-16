@@ -54,7 +54,7 @@ class FileReport {
     [bool]$intuneManagedDevice
     [string]$deviceName
     [string]$userId
-    [ipaddress]$clientIp
+    [string]$clientIp
     [string]$browserName
     [string]$eventSource
     [string]$geoLocation
