@@ -16,7 +16,9 @@ function Write-Log {
         [String]$LogFile = $Global:LogPath
     )
     begin {
-        if (-not $LogFile) {
+        if (-not $LogFile -or 
+            $LogFile -notmatch ([System.IO.FileInfo]$PSCommandPath).BaseName
+        ) {
             $LogFile = Split-Path -Leaf $PSCommandPath.Replace('.ps1', '.log')
             $Global:LogPath = $LogFile
         }
