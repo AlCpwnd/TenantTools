@@ -3,7 +3,10 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [string]$User
+    [string]$User,
+
+    [Parameter()]
+    [int16]$Days = 7
 )
 
 function Get-MgUserInfo {
@@ -50,7 +53,7 @@ else {
     throw "Failed to find corresponding user."
 }
 
-$startDate = (Get-Date).AddDays(-7).ToUniversalTime()
+$startDate = (Get-Date).AddDays(-$Days).ToUniversalTime()
 $endDate   = (Get-Date).ToUniversalTime()
 
 $body = @{
@@ -100,10 +103,16 @@ return $auditSearch
     This can be the mail, SamAccountName or ObjectId of the targeted user. The given information
     is first matched against the EntraId. If no corresponding user is found the script stops.
 
+    .PARAMETER Days
+    Number of days back the report will go back.
+
     .LINK
     https://learn.microsoft.com/en-us/purview/audit-solutions-overview
 
     .EXAMPLE
     PS> .\UserAudit.ps1 -User john.doe@contoso.com
+
+    .EXAMPLE
+    PS> .\UserAudit.ps1 -User john.doe@contoso.com -Days 30
 #>
 
