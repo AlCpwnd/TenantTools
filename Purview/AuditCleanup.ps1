@@ -91,7 +91,7 @@ $report = foreach ($record in $csv) {
 
 if (Get-Module -Name ImportExcel -ListAvailable -ErrorAction SilentlyContinue) {
     $FilePath = $LogFile -replace '\.csv', '_cleaned.xlsx'
-    $report | Export-Excel -Path $FilePath
+    $report | Export-Excel -Path $FilePath -WorksheetName Logs -TableName Logs -TableStyle Medium5 -AutoSize
 }
 else {
     $FilePath = $LogFile -replace '\.csv', '_cleaned.csv'
