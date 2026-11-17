@@ -84,7 +84,7 @@ $Report = foreach($Team in $Teams){
             Write-Progress -Activity "Documenting Channels [$j/$jMax]" -Status $Channel.DisplayName -Id 1 -PercentComplete (($j/$jMax)*100) -ParentId 0
         }
         # Get-MgChannelMember command isn't working atm. Going through API calls as an alternative.
-        $Members = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($Team.Id)/channels/$($Channel.Id)/members").value
+        $Members = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($Team.Id)/channels/$($Channel.Id)/allMembers").value
         if($PSCmdlet.ParameterSetName -eq "All"){
             foreach($member in $Members){
                 if($member.Roles){
