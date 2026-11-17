@@ -102,8 +102,8 @@ foreach($team in $teams){
     $fails = $false
 
     foreach($channel in $channels){
-        if($jMax -gt 3){
-            Write-Progress -Activity "Removing channel access" -Status $channel.DisplayName -Id 1 -PercentComplete (($j/$jMax)*100) -ParentId 0
+        if($jMax -gt 3){ # Prevents progress bar flickering.
+            Write-Progress -Activity "Removing channel access" -Status $channel.DisplayName -Id 1 -ParentId 0 -PercentComplete (($j/$jMax)*100)
         }
         $j++
 
