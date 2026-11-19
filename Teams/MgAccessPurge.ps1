@@ -89,11 +89,22 @@ $teams = Get-MgUserJoinedTeam -UserId $userInfo.Id
 $i = 0
 $iMax = $teams.count
 
-foreach($team in $teams){
-    Write-Progress -Activity "Removing team access" -Status $team.DisplayName -Id 0 -PercentComplete (($i/$iMax)*100)
+foreach ($team in $teams) {
+    Write-Progress -Activity "Removing team access" -Status $team.DisplayName -Id 0 -PercentComplete (($i / $iMax) * 100)
     $i++
 
     "INFO`tStarting channel verification for Team: {0}" -f $team.DisplayName | Write-Log
+
+    $teamUsers = Get-MgTeamMember -TeamId $team.Id
+    $teamOwners = $teamUsers | Where-Object { $_.Roles -contains 'owner' }
+    $teamUserInfo = $teamUsers | Where-Object { $_['userId'] -eq $userInfo.Id }
+    if (
+        $teamOwners -contains $teamUserInfo -and
+        $teamOwners.Count -eq 1
+    ) {
+        "ERROR`tTeams only has a single owner. Assign new owner before removing the current one." | Write-Log
+        continue
+    }
 
     $channels = Get-MgTeamChannel -TeamId $team.Id -Filter "membershipType eq 'private'"
 
@@ -102,29 +113,46 @@ foreach($team in $teams){
 
     $fails = $false
 
-    foreach($channel in $channels){
-        if($jMax -gt 3){ # Prevents progress bar flickering.
-            Write-Progress -Activity "Removing channel access" -Status $channel.DisplayName -Id 1 -ParentId 0 -PercentComplete (($j/$jMax)*100)
+    foreach ($channel in $channels) {
+        if ($jMax -gt 3) {
+            # Prevents progress bar flickering.
+            Write-Progress -Activity "Removing channel access" -Status $channel.DisplayName -Id 1 -ParentId 0 -PercentComplete (($j / $jMax) * 100)
         }
         $j++
 
-        $userChannelInfo = (Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members?`$filter=displayName eq '$($userInfo.DisplayName)'")['value']
-        if($userChannelInfo){
-            try{
-                # Remove-MgTeamChannelMember -TeamId $team.Id -ChannelId $channel.Id -ConversationMemberId $userChannelInfo.Id -ErrorAction Stop
-                Invoke-MgGraphRequest -Method DELETE -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members/$($userChannelInfo.id)" -ErrorAction Stop
-                "INFO`tRemoved user from channel: {0}" -f $channel.DisplayName | Write-Log
-            }catch{
-                "ERROR`tFailed to remove user from channel: {0}" -f $channel.DisplayName | Write-Log
+        $uri = "https://graph.microsoft.com/v1.0/teams/{0}/channels/{1}/members" -f $team.Id, $channel.Id
+
+        $channelUsers = (Invoke-MgGraphRequest -Method GET -Uri $uri)['value']
+        $channelOwners = $channelUsers | Where-Object { $_.Roles -contains 'owner' }
+        $channelUserInfo = $channelUsers | Where-Object { $_.userId -eq $userInfo.Id }
+        if ($channelUserInfo) {
+            if(
+                $channelOwners -contains $channelUserInfo -and
+                $channelOwners.Count -eq 1
+            ){
+                "ERROR`tChannel has a single owner: {0}. Assign a new owner before removing the current one" -f $channel.DisplayName | Write-Log
                 $fails = $true
+            }
+            else{
+                try {
+                    # Remove-MgTeamChannelMember -TeamId $team.Id -ChannelId $channel.Id -ConversationMemberId $userChannelInfo.Id -ErrorAction Stop
+                    Invoke-MgGraphRequest -Method DELETE -Uri "https://graph.microsoft.com/v1.0/teams/$($team.Id)/channels/$($channel.Id)/members/$($userChannelInfo.id)" -ErrorAction Stop
+                    "INFO`tRemoved user from channel: {0}" -f $channel.DisplayName | Write-Log
+                }
+                catch {
+                    "ERROR`tFailed to remove user from channel: {0}" -f $channel.DisplayName | Write-Log
+                    $fails = $true
+                }
             }
         }
     }
-    Write-Progress -Activity "Removing channel access" -Completed
+    Write-Progress -Activity "Removing channel access" -Id 1 -Completed
 
-    if($fails){
+    if ($fails) {
         "ERROR`tChannel removal failed. Cancelled Team removal." | Write-Log
-    }else{
+    }
+    else {
+        Remove-MgTeamMember -TeamId $team.Id -ConversationMemberId $teamUserInfo.Id
         "INFO`tRemoved from Team: {0}" -f $team.DisplayName | Write-Log
     }
 }
