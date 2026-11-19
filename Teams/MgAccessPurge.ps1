@@ -76,9 +76,10 @@ if ($MissingScopes) {
 
 $userInfo = Get-MgUserInfo -User $User
 
-if($userInfo){
-    "INFO`tUser found:`n`t- Name: {0}`n`t- ID:`t{1}`n`t- Mail:`t{2}" -f $userInfo.DisplayName,$userInfo.Id, $userInfo.Mail | Write-Log
-}else{
+if ($userInfo) {
+    "INFO`tUser found:`n`t- Name: {0}`n`t- ID:`t{1}`n`t- Mail:`t{2}" -f $userInfo.DisplayName, $userInfo.Id, $userInfo.Mail | Write-Log
+}
+else {
     "ERROR`tFailed to find corresponding user."
     return
 }
@@ -127,6 +128,8 @@ foreach($team in $teams){
         "INFO`tRemoved from Team: {0}" -f $team.DisplayName | Write-Log
     }
 }
+
+Write-Progress -Activity "Removing channel access" -Id 0
 
 "====Script Stop====" | Write-Log
 
